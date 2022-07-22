@@ -1,9 +1,13 @@
 {
-  "name": "Spacer",
+  "name": "Spacer v3",
   "id": "1119123732088744027",
   "api": "1.0.0",
   "main": "code.js",
   "editorType": [
     "figma"
+  ],
+  "menu": [
+    {"name": "Find New Spacers", "command": "find"},
+    {"name": "Toggle Visibility", "command": "toggle"}
   ]
 }

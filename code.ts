@@ -5,50 +5,49 @@
 // Runs this code if the plugin is run in Figma
 if (figma.editorType === "figma") {
 
+   // Gets array of all spacer Ids
+   
+   const savedIds = JSON.parse(figma.root.getPluginData('allSpacerIds'))
+
+  if (figma.command === "find") {
+
     // Skip over invisible nodes and their descendants inside instances for faster performance
-      figma.skipInvisibleInstanceChildren = true
-    
-    // Finds all instance nodes
-      const components = figma.currentPage.findAllWithCriteria({
-        types: ['INSTANCE']
-      })
-  
-      // Finds all instance nodes with the name ~spacer
-      for (const component of components) {
-        if (component.removed === false && component.name.includes("~spacer") && (component.variantProperties)) {
-          if (component.variantProperties["Visible"] === "On") {
-             component.setProperties({"Visible":"Off"})
-          }
-          else {
-             component.setProperties({"Visible":"On"})
-          }
-        }
+    figma.skipInvisibleInstanceChildren = true
+
+    // Gets all instance nodes
+    const components = figma.root.findAllWithCriteria({
+      types: ['INSTANCE']
+    })
+
+    // Filters in only nodes which include '~spacer' in name
+    const spacers = components.filter(style => style.name.includes('~spacer'));
+
+    // Creates array of just the spacer IDs
+    const spacerIds = spacers.map(style => style.id);
+
+    // Saves all spacer Ids to plugin data
+    figma.root.setPluginData('allSpacerIds', JSON.stringify(spacerIds))
+
+  }
+  //————————————————————————————————————————————————————————————————————————
+
+  if (figma.command === "toggle") {
+
+    const allNodes = savedIds.map(spacerIds => figma.getNodeById(spacerIds))
+
+    for (const oneNode of allNodes as InstanceNode[]) {
+
+      let makeVisible;
+      if (oneNode.variantProperties["Visible"] === "Off") {
+        makeVisible = "On"
+      } else {
+        makeVisible = "Off"
       }
-  
-      // Make sure to close the plugin when you're done. Otherwise the plugin will
-      // keep running, which shows the cancel button at the bottom of the screen.
-      figma.closePlugin();
-    }
-  
+      oneNode.setProperties({"Visible":`${makeVisible}`})
+  }
+  } 
 
-    // //GETS ALL SELECTED NODES & THEIR CHILDREN
-
-//   // create array to store all selected nodes
-//   const allNodes = []
-//   // gets all parent notes from current selection
-//   const parentNodes = figma.currentPage.selection;
-//   // single out 1 parentNode of current selection
-//   for (const parentNode of parentNodes) {
-//     // send it to allNodes array
-//     allNodes.push(parentNode)
-//     // check if there are children
-//     if ("children" in parentNode) {
-//       // if so, get all children of parentNode
-//       const childNodes = parentNode.findAll();
-//       // single out 1 childNode of current selection
-//       for (const childNode of childNodes) {
-//         // send it to allNodes array
-//         allNodes.push(childNode)
-//       }
-//     }   
-//   }
+// Make sure to close the plugin when you're done. Otherwise the plugin will
+// keep running, which shows the cancel button at the bottom of the screen.
+figma.closePlugin();
+}

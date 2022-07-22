@@ -3,21 +3,34 @@
 // a full browser environment (see documentation).
 // Runs this code if the plugin is run in Figma
 if (figma.editorType === "figma") {
-    // Skip over invisible nodes and their descendants inside instances for faster performance
-    figma.skipInvisibleInstanceChildren = true;
-    // Finds all instance nodes
-    const components = figma.currentPage.findAllWithCriteria({
-        types: ['INSTANCE']
-    });
-    // Finds all instance nodes with the name ~spacer
-    for (const component of components) {
-        if (component.removed === false && component.name.includes("~spacer") && (component.variantProperties)) {
-            if (component.variantProperties["Visible"] === "On") {
-                component.setProperties({ "Visible": "Off" });
+    // Gets array of all spacer Ids
+    const savedIds = JSON.parse(figma.root.getPluginData('allSpacerIds'));
+    if (figma.command === "find") {
+        // Skip over invisible nodes and their descendants inside instances for faster performance
+        figma.skipInvisibleInstanceChildren = true;
+        // Gets all instance nodes
+        const components = figma.root.findAllWithCriteria({
+            types: ['INSTANCE']
+        });
+        // Filters in only nodes which include '~spacer' in name
+        const spacers = components.filter(style => style.name.includes('~spacer'));
+        // Creates array of just the spacer IDs
+        const spacerIds = spacers.map(style => style.id);
+        // Saves all spacer Ids to plugin data
+        figma.root.setPluginData('allSpacerIds', JSON.stringify(spacerIds));
+    }
+    //————————————————————————————————————————————————————————————————————————
+    if (figma.command === "toggle") {
+        const allNodes = savedIds.map(spacerIds => figma.getNodeById(spacerIds));
+        for (const oneNode of allNodes) {
+            let makeVisible;
+            if (oneNode.variantProperties["Visible"] === "Off") {
+                makeVisible = "On";
             }
             else {
-                component.setProperties({ "Visible": "On" });
+                makeVisible = "Off";
             }
+            oneNode.setProperties({ "Visible": `${makeVisible}` });
         }
     }
     // Make sure to close the plugin when you're done. Otherwise the plugin will
