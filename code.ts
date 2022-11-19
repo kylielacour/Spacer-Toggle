@@ -5,48 +5,53 @@
 // Runs this code if the plugin is run in Figma
 if (figma.editorType === "figma") {
 
-   // Gets array of all spacer Ids
+  //Skip over invisible nodes and their descendants inside instances for faster performance
+  figma.skipInvisibleInstanceChildren = true;
+
+  //Gets all selected instance nodes
+  // @ts-ignore 
+  const components = figma.currentPage.selection[0].findAllWithCriteria({
+    types: ['INSTANCE']
+  });
+
+  //create arrays to store spacers
+  const spacerNodes = [];
+
+  //goes through all instance nodes and pushes spacers to spacerNodes array
+  for (const node of components) {
+    if (node.type === 'INSTANCE' && node.removed === false && node.name.includes("~spacer") && (node.variantProperties)) {
+      spacerNodes.push(node);
+    }
+  }
    
-   const savedIds = JSON.parse(figma.root.getPluginData('allSpacerIds'))
-
-  if (figma.command === "find") {
-
-    // Skip over invisible nodes and their descendants inside instances for faster performance
-    figma.skipInvisibleInstanceChildren = true
-
-    // Gets all instance nodes
-    const components = figma.root.findAllWithCriteria({
-      types: ['INSTANCE']
-    })
-
-    // Filters in only nodes which include '~spacer' in name
-    const spacers = components.filter(style => style.name.includes('~spacer'));
-
-    // Creates array of just the spacer IDs
-    const spacerIds = spacers.map(style => style.id);
-
-    // Saves all spacer Ids to plugin data
-    figma.root.setPluginData('allSpacerIds', JSON.stringify(spacerIds))
-
-  }
-  //————————————————————————————————————————————————————————————————————————
-
-  if (figma.command === "toggle") {
-
-    const allNodes = savedIds.map(spacerIds => figma.getNodeById(spacerIds))
-
-    for (const oneNode of allNodes as InstanceNode[]) {
-
-      let makeVisible;
-      if (oneNode.variantProperties["Visible"] === "Off") {
-        makeVisible = "On"
-      } else {
-        makeVisible = "Off"
+  // for each spacer in spacerNodes array
+  for (const spacer of spacerNodes as InstanceNode[]) {
+    // create arrays for on and off spacers
+    const spacersOn = [];
+    const spacersOff = [];
+    // check if "Visible" === "On"
+    if (spacer.variantProperties["Visible"] === "On") {
+      // if true, send to spacersOn array
+      spacersOn.push(spacer);
+    } 
+    // else, send to spacersOff array
+    else {
+      spacersOff.push(spacer);
+    }
+    // if spacersOff array length === 0, run through each node in spacersOn and turn Visible to Off
+    if (spacersOff.length === 0) {
+      for (const onSpacer of spacersOn) {
+        onSpacer.setProperties({"Visible" : "Off"});
       }
-      oneNode.setProperties({"Visible":`${makeVisible}`})
+    }
+    // else, run through each node in spacersOff and turn Visible to On
+    else {
+      for (const offSpacer of spacersOff) {
+        offSpacer.setProperties({"Visible" : "On"});
+      }
+    }
   }
-  } 
-
+  
 // Make sure to close the plugin when you're done. Otherwise the plugin will
 // keep running, which shows the cancel button at the bottom of the screen.
 figma.closePlugin();
