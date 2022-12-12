@@ -5,24 +5,16 @@
 if (figma.editorType === "figma") {
     //Skip over invisible nodes and their descendants inside instances for faster performance
     figma.skipInvisibleInstanceChildren = true;
-    //Gets all selected instance nodes
-    // @ts-ignore 
-    const components = figma.currentPage.selection[0].findAllWithCriteria({
-        types: ['INSTANCE']
+    const spacers = [];
+    const selection = figma.currentPage.selection.filter(node => node.children);
+    selection.forEach(node => {
+        spacers.push(...node.findAllWithCriteria({ types: ['INSTANCE'] }).filter(node => node.name.includes("~spacer")));
     });
-    //create arrays to store spacers
-    const spacerNodes = [];
-    //goes through all instance nodes and pushes spacers to spacerNodes array
-    for (const node of components) {
-        if (node.type === 'INSTANCE' && node.removed === false && node.name.includes("~spacer") && (node.variantProperties)) {
-            spacerNodes.push(node);
-        }
-    }
-    // for each spacer in spacerNodes array
-    for (const spacer of spacerNodes) {
-        // create arrays for on and off spacers
-        const spacersOn = [];
-        const spacersOff = [];
+    // create arrays for on and off spacers
+    const spacersOn = [];
+    const spacersOff = [];
+    // for each spacer in spacers array
+    for (const spacer of spacers) {
         // check if "Visible" === "On"
         if (spacer.variantProperties["Visible"] === "On") {
             // if true, send to spacersOn array
